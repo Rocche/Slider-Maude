@@ -11,9 +11,11 @@ fmod COORDS is
     sort Coords .
 
     op _;_ : Int Int -> Coords [ ctor ] .
+
     ---used for searching function in matrix
+    vars x y : Int .
     op incrementRow : Coords -> Coords .
-    eq incrementRow(x:Int ; y:Int) = (x:Int + 1) ; y:Int .
+    eq incrementRow(x ; y) = (x + 1) ; y .
 
 endfm
 
@@ -62,6 +64,12 @@ fmod VECTOR is
     eq getElementByIndex(head, tail, 0) = head .
     eq getElementByIndex(head, tail, N) = getElementByIndex(tail, N - 1) .
 
+    var E : Element .
+    
+    op insertElementIntoVector : Vector Element Int -> Vector .
+    eq insertElementIntoVector((head, tail), E, 0) = E, tail .
+    eq insertElementIntoVector((head, tail), E, N) = head, insertElementIntoVector(tail, E, N - 1) [ owise ] . 
+
 endfm
 
 fmod MATRIX is
@@ -79,6 +87,12 @@ fmod MATRIX is
     op getElementByIndexes : Matrix Int Int -> Element .
     eq getElementByIndexes(m_head | m_tail, 0, col) = getElementByIndex(m_head, col) .
     eq getElementByIndexes(m_head | m_tail, row, col) = getElementByIndexes(m_tail, row - 1, col) .
+
+    var E : Element .
+    op insertElementIntoMatrix : Matrix Element Int Int -> Matrix .
+    eq insertElementIntoMatrix((m_head | m_tail), E, 0, col) = insertElementIntoVector(m_head, E, col) | m_tail .
+    eq insertElementIntoMatrix((m_head | m_tail), E, row, col) = m_head | insertElementIntoMatrix(m_tail, E, row - 1, col) .
+
 endfm
 
 fmod PUZZLE is
@@ -118,17 +132,25 @@ fmod MOVES is
     protecting INT .
     protecting VECTOR .
     protecting COORDS .
+    protecting MATRIX .
 
+    sort Move .
     subsort Bool < Element .
-    ---ops LEFT UP RIGHT DOWN : -> Move [ ctor ] .
+    ops LEFT UP RIGHT DOWN : -> Move [ ctor ] .
 
     vars X Y : Int .
     op getAvailableMoves : Coords -> Vector .
     eq getAvailableMoves(X ; Y) = (Y > 0, X > 0, Y < 2, X < 2) .
+
+    op move : Matrix Move -> Matrix .
+
 endfm
 
 mod SLIDING-PUZZLE-GAME is
     protecting PUZZLE .
     protecting MOVES .
+
+    op initial : -> Matrix .
+    eq initial = (three, one, two) | (empty, seven, four) | (five, eight, six) .
 
 endm
