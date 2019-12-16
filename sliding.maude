@@ -24,6 +24,20 @@ fmod TILE is
 
     ops one two three four five six seven eight empty : -> Value [ ctor ] .
 
+    var tile : Value .
+    var c : Coords .
+
+    op isTileInCorrectPlace : Value Coords -> Bool .
+    eq isTileInCorrectPlace(one, (0 ; 0)) = true .
+    eq isTileInCorrectPlace(two, (0 ; 1)) = true .
+    eq isTileInCorrectPlace(three, (0 ; 2)) = true .
+    eq isTileInCorrectPlace(four, (1 ; 0)) = true .
+    eq isTileInCorrectPlace(five, (1 ; 1)) = true .
+    eq isTileInCorrectPlace(six, (1 ; 2)) = true .
+    eq isTileInCorrectPlace(seven, (2 ; 0)) = true .
+    eq isTileInCorrectPlace(eight, (2 ; 1)) = true .
+    eq isTileInCorrectPlace(tile, c) = false [ owise ] .
+
 endfm
 
 
