@@ -1,0 +1,120 @@
+fmod SLIDING-PUZZLE-DEFINITIONS is
+
+    sort Puzzle .
+    ---subsort Tile < Puzzle .
+
+endfm
+
+fmod COORDS is
+    protecting INT .
+
+    sort Coords .
+
+    op _;_ : Int Int -> Coords [ ctor ] .
+    ---used for searching function in matrix
+    op incrementRow : Coords -> Coords .
+    eq incrementRow(x:Int ; y:Int) = (x:Int + 1) ; y:Int .
+
+endfm
+
+fmod TILE is
+    protecting COORDS .
+
+    sort Value .
+
+    ops one two three four five six seven eight empty : -> Value [ ctor ] .
+
+endfm
+
+
+fmod VECTOR is
+    protecting INT .
+    sorts Element Vector .
+    subsort Element < Vector .
+
+    op _,_ : Vector Vector -> Vector [ assoc id: nil ] .
+    op nil : -> Vector [ ctor ] .
+
+    op len : Vector -> Int .
+
+    var head : Element .
+    var tail : Vector .
+    eq len(nil) = 0 .
+    eq len(head, tail) = 1 + len(tail) .
+
+    var N : Int .
+
+    op getElementByIndex : Vector Int -> Element .
+    eq getElementByIndex(head, tail, 0) = head .
+    eq getElementByIndex(head, tail, N) = getElementByIndex(tail, N - 1) .
+
+endfm
+
+fmod MATRIX is
+    protecting VECTOR .
+    sort Matrix .
+    subsort Vector < Matrix .
+
+    op _|_ : Matrix Matrix -> Matrix [ assoc id: mnil ] .
+    op mnil : -> Matrix [ ctor ] .
+
+    var m_head : Vector .
+    var m_tail : Matrix .
+    vars row col : Int .
+
+    op getElementByIndexes : Matrix Int Int -> Element .
+    eq getElementByIndexes(m_head | m_tail, 0, col) = getElementByIndex(m_head, col) .
+    eq getElementByIndexes(m_head | m_tail, row, col) = getElementByIndexes(m_tail, row - 1, col) .
+endfm
+
+fmod PUZZLE is
+    protecting TILE .
+    protecting MATRIX .
+
+    sort Puzzle .
+    sort Line .
+
+    subsort Puzzle < Matrix .
+    subsort Value < Element .
+    subsort Line < Vector .
+
+    var head value : Value .
+    var tail : Vector .
+    var line : Vector .
+    var puzzle : Matrix .
+    var N : Int .
+
+    op getColumnFromValue : Vector Value -> Int .
+    ceq getColumnFromValue((head, tail), value) = 0 if head == value .
+    ceq getColumnFromValue(tail, value) = 50 if tail == nil .
+    eq getColumnFromValue((head, tail), value) = 1 + getColumnFromValue(tail, value) [ owise ] .
+
+    op getPositionFromValue : Matrix Value -> Coords .
+    ceq getPositionFromValue((line | puzzle), value) = 0 ; getColumnFromValue(line, value) if getColumnFromValue(line, value) < 3 .
+    eq getPositionFromValue((line | puzzle), value) = incrementRow(getPositionFromValue(puzzle, value)) [ owise ] .
+
+    op getEmptyPosition : Matrix -> Coords .
+    eq getEmptyPosition(puzzle) = getPositionFromValue(puzzle, empty) .
+
+endfm
+
+
+
+fmod MOVES is
+    protecting INT .
+    protecting VECTOR .
+    protecting COORDS .
+
+    subsort Bool < Element .
+    ---ops LEFT UP RIGHT DOWN : -> Move [ ctor ] .
+
+    vars X Y : Int .
+    op getAvailableMoves : Coords -> Vector .
+    eq getAvailableMoves(X ; Y) = (Y > 0, X > 0, Y < 2, X < 2) .
+endfm
+
+mod SLIDING-PUZZLE-GAME is
+    protecting PUZZLE .
+    protecting MOVES .
+
+endm
