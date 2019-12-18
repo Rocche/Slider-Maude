@@ -1,10 +1,3 @@
-fmod SLIDING-PUZZLE-DEFINITIONS is
-
-    sort Puzzle .
-    ---subsort Tile < Puzzle .
-
-endfm
-
 fmod COORDS is
     protecting INT .
 
@@ -64,7 +57,7 @@ fmod VECTOR is
     sorts Element Vector .
     subsort Element < Vector .
 
-    op _,_ : Vector Vector -> Vector [ assoc id: nil ] .
+    op _,_ : Vector Vector -> Vector [ assoc id: nil prec 40 ] .
     op nil : -> Vector [ ctor ] .
 
     op len : Vector -> Int .
@@ -77,6 +70,7 @@ fmod VECTOR is
     var N : Int .
 
     op getElementByIndex : Vector Int -> Element .
+    ---eq getElementByIndex(nil, N) = nil .
     eq getElementByIndex(head, tail, 0) = head .
     eq getElementByIndex(head, tail, N) = getElementByIndex(tail, N - 1) .
 
@@ -93,7 +87,7 @@ fmod MATRIX is
     sort Matrix .
     subsort Vector < Matrix .
 
-    op _|_ : Matrix Matrix -> Matrix [ assoc id: mnil ] .
+    op _|_ : Matrix Matrix -> Matrix [ assoc id: mnil prec 45 ] .
     op mnil : -> Matrix [ ctor ] .
 
     var m_head : Vector .
@@ -101,11 +95,13 @@ fmod MATRIX is
     vars row col : Int .
 
     op getElementByIndexes : Matrix Int Int -> Element .
+    eq getElementByIndexes(mnil, row, col) = getElementByIndex(nil, col) .
     eq getElementByIndexes(m_head | m_tail, 0, col) = getElementByIndex(m_head, col) .
     eq getElementByIndexes(m_head | m_tail, row, col) = getElementByIndexes(m_tail, row - 1, col) .
 
     var E : Element .
     op insertElementIntoMatrix : Matrix Element Int Int -> Matrix .
+    eq insertElementIntoMatrix(mnil, E, row, col) = mnil .
     eq insertElementIntoMatrix((m_head | m_tail), E, 0, col) = insertElementIntoVector(m_head, E, col) | m_tail .
     eq insertElementIntoMatrix((m_head | m_tail), E, row, col) = m_head | insertElementIntoMatrix(m_tail, E, row - 1, col) .
 
@@ -147,8 +143,6 @@ fmod PUZZLE is
     eq insertElementIntoPuzzle(puzzle, value, (x ; y)) = insertElementIntoMatrix(puzzle, value, x, y) .
 
 endfm
-
-
 
 fmod MOVES is
     protecting INT .
@@ -209,7 +203,7 @@ fmod DISTANCE is
     var row : Vector .
     var p : Matrix .
 
-    op calculatePuzzleScore : Puzzle Int -> Int .
+    op calculatePuzzleScore : Matrix Int -> Int .
     ceq calculatePuzzleScore(p, row_index) = 0 if p == mnil .
     eq calculatePuzzleScore((row | p), row_index) = calculateRowScore(row, row_index, 0) + calculatePuzzleScore(p, row_index + 1) .
 
@@ -221,7 +215,7 @@ fmod CHOICE is
     protecting DISTANCE .
 
     sort Choice .
-    op <_&_> : Matrix Int -> Choice [ ctor frozen ] .
+    op <_&_> : Matrix Int -> Choice [ ctor frozen prec 50 ] .
 
     vars p q : Matrix .
     var m n : Move .
@@ -233,12 +227,19 @@ fmod CHOICE is
     ceq minChoice(< p & score_p >, < q & score_q >) = < p & score_p > if score_p < score_q .
     eq minChoice(< p & score_p >, < q & score_q >) = < q & score_q > [ owise ] .
 
+    op getPuzzleFromChoice : Choice -> Matrix .
+    eq getPuzzleFromChoice(< p & score_p >) = p .
+
     subsort Choice < Element .
+    subsort Move < Element .
     var head : Move .
     var tail : Vector .
     op selectChoice : Matrix Vector -> Choice .
     ceq selectChoice(p, tail) = < mnil & 10000 > if tail == nil .
     eq selectChoice(p, (head, tail)) = minChoice(getChoice(p, head), selectChoice(p, tail)) [ owise ] .
+
+    op next : Matrix Vector -> Matrix .
+    eq next(p, tail) = getPuzzleFromChoice(selectChoice(p, tail)) .
 endfm
 
 
@@ -251,5 +252,9 @@ mod SLIDING-PUZZLE-GAME is
 
     op initial : -> Matrix .
     eq initial = (three, one, two) | (seven, empty, four) | (five, eight, six) .
+
+    var puzzle : Matrix .
+    rl [move] :
+        puzzle => next(puzzle, getAvailableMoves(getEmptyPosition(puzzle))) .
 
 endm
