@@ -194,7 +194,24 @@ fmod DISTANCE is
 
     var tile : Value .
     var X Y : Int .
+    var c : Coords .
     op getDistanceFromCorrectPosition : Value Coords -> Int .
+    eq getDistanceFromCorrectPosition(empty, c) = 0 .
+    eq getDistanceFromCorrectPosition(tile, c) = calculateDistance(c, getCorrectPlace(tile)) [ owise ] .
+
+    var head : Value .
+    var tail : Vector .
+    var row_index col_index : Int .
+    op calculateRowScore : Vector Int Int -> Int .
+    ceq calculateRowScore(tail, row_index, col_index) = 0 if tail == nil .
+    eq calculateRowScore((head, tail), row_index, col_index) = getDistanceFromCorrectPosition(head, (row_index ; col_index)) + calculateRowScore(tail, row_index, col_index + 1) .
+
+    var row : Vector .
+    var p : Matrix .
+
+    op calculatePuzzleScore : Puzzle Int -> Int .
+    ceq calculatePuzzleScore(p, row_index) = 0 if p == mnil .
+    eq calculatePuzzleScore((row | p), row_index) = calculateRowScore(row, row_index, 0) + calculatePuzzleScore(p, row_index + 1) .
 
 endfm
 
@@ -211,6 +228,7 @@ endfm
 mod SLIDING-PUZZLE-GAME is
     protecting PUZZLE .
     protecting MOVES .
+    protecting DISTANCE .
 
     op initial : -> Matrix .
     eq initial = (three, one, two) | (seven, empty, four) | (five, eight, six) .
