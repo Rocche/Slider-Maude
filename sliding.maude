@@ -215,12 +215,30 @@ fmod DISTANCE is
 
 endfm
 
-fmod NODE is
+fmod CHOICE is
     protecting INT .
     protecting MOVES .
+    protecting DISTANCE .
 
-    sort Node .
-    op <_&_> : Matrix Int -> Node [ ctor frozen ] .
+    sort Choice .
+    op <_&_> : Matrix Int -> Choice [ ctor frozen ] .
+
+    vars p q : Matrix .
+    var m n : Move .
+    var score_p score_q : Int .
+    op getChoice : Matrix Move -> Choice .
+    eq getChoice(p, m) = < move(p, m) & calculatePuzzleScore(move(p, m), 0) > .
+
+    op minChoice : Choice Choice -> Choice .
+    ceq minChoice(< p & score_p >, < q & score_q >) = < p & score_p > if score_p < score_q .
+    eq minChoice(< p & score_p >, < q & score_q >) = < q & score_q > [ owise ] .
+
+    subsort Choice < Element .
+    var head : Move .
+    var tail : Vector .
+    op selectChoice : Matrix Vector -> Choice .
+    ceq selectChoice(p, tail) = < mnil & 10000 > if tail == nil .
+    eq selectChoice(p, (head, tail)) = minChoice(getChoice(p, head), selectChoice(p, tail)) [ owise ] .
 endfm
 
 
@@ -229,6 +247,7 @@ mod SLIDING-PUZZLE-GAME is
     protecting PUZZLE .
     protecting MOVES .
     protecting DISTANCE .
+    protecting CHOICE .
 
     op initial : -> Matrix .
     eq initial = (three, one, two) | (seven, empty, four) | (five, eight, six) .
