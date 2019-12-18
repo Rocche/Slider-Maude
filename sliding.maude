@@ -152,22 +152,36 @@ fmod MOVES is
 
     sort Move .
     subsort Bool < Element .
+    subsort Move < Element .
     ops LEFT UP RIGHT DOWN : -> Move [ ctor ] .
+    
+    op getMoveFromIndex : Int Bool -> Move .
+    eq getMoveFromIndex(0, true) = LEFT .
+    eq getMoveFromIndex(1, true) = UP .
+    eq getMoveFromIndex(2, true) = RIGHT .
+    eq getMoveFromIndex(3, true) = DOWN .
+    eq getMoveFromIndex(N:Int, B:Bool) = nil [ owise ] .
+
+    vars L U R D : Bool .
+    op getAvailableMovesFromBoolVector : Vector -> Vector .
+    eq getAvailableMovesFromBoolVector(L, U, R, D) = getMoveFromIndex(0, L), getMoveFromIndex(1, U), getMoveFromIndex(2, R), getMoveFromIndex(3, D) .
 
     vars X Y : Int .
     op getAvailableMoves : Coords -> Vector .
-    eq getAvailableMoves(X ; Y) = (Y > 0, X > 0, Y < 2, X < 2) .
+    eq getAvailableMoves(X ; Y) = getAvailableMovesFromBoolVector(Y > 0, X > 0, Y < 2, X < 2) .
+
 
     var M : Matrix .
 
     op move : Matrix Move -> Matrix .
-    ---eq move(M, UP) = insertElementIntoPuzzle( insertElementIntoPuzzle( M, getElementByCoords( decrementRow( getEmptyPosition( M ) ) ), getEmptyPosition( M ) ), empty, decrementRow( getEmptyPosition( M ) ) ) .
     eq move(M, UP) = insertElementIntoPuzzle(insertElementIntoPuzzle(M, empty, decrementRow( getEmptyPosition( M ) ) ), getElementByCoords(M, decrementRow(getEmptyPosition(M))), getEmptyPosition(M)) .
     eq move(M, DOWN) = insertElementIntoPuzzle(insertElementIntoPuzzle(M, empty, incrementRow( getEmptyPosition( M ) ) ), getElementByCoords(M, incrementRow(getEmptyPosition(M))), getEmptyPosition(M)) .
     eq move(M, LEFT) = insertElementIntoPuzzle(insertElementIntoPuzzle(M, empty, decrementCol( getEmptyPosition( M ) ) ), getElementByCoords(M, decrementCol(getEmptyPosition(M))), getEmptyPosition(M)) .
     eq move(M, RIGHT) = insertElementIntoPuzzle(insertElementIntoPuzzle(M, empty, incrementCol( getEmptyPosition( M ) ) ), getElementByCoords(M, incrementCol(getEmptyPosition(M))), getEmptyPosition(M)) .
 
 endfm
+
+
 
 mod SLIDING-PUZZLE-GAME is
     protecting PUZZLE .
