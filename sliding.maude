@@ -13,7 +13,7 @@ fmod COORDS is
     op _;_ : Int Int -> Coords [ ctor ] .
 
     ---used for searching function in matrix
-    vars x y : Int .
+    vars x y w z : Int .
     op incrementRow : Coords -> Coords .
     eq incrementRow(x ; y) = (x + 1) ; y .
 
@@ -25,6 +25,10 @@ fmod COORDS is
 
     op decrementCol : Coords -> Coords .
     eq decrementCol(x ; y) = x ; (y - 1) .
+
+    op calculateDistance : Coords Coords -> Int .
+    eq calculateDistance((x ; y), (w ; z)) = abs(x - w) + abs(y - z) .
+
 
 endfm
 
@@ -38,15 +42,18 @@ fmod TILE is
     var tile : Value .
     var c : Coords .
 
+    op getCorrectPlace : Value -> Coords .
+    eq getCorrectPlace(one) = (0 ; 0) .
+    eq getCorrectPlace(two) = (0 ; 1) .
+    eq getCorrectPlace(three) = (0 ; 2) .
+    eq getCorrectPlace(four) = (1 ; 0) .
+    eq getCorrectPlace(five) = (1 ; 1) .
+    eq getCorrectPlace(six) = (1 ; 2) .
+    eq getCorrectPlace(seven) = (2 ; 0) .
+    eq getCorrectPlace(eight) = (2 ; 1) .
+
     op isTileInCorrectPlace : Value Coords -> Bool .
-    eq isTileInCorrectPlace(one, (0 ; 0)) = true .
-    eq isTileInCorrectPlace(two, (0 ; 1)) = true .
-    eq isTileInCorrectPlace(three, (0 ; 2)) = true .
-    eq isTileInCorrectPlace(four, (1 ; 0)) = true .
-    eq isTileInCorrectPlace(five, (1 ; 1)) = true .
-    eq isTileInCorrectPlace(six, (1 ; 2)) = true .
-    eq isTileInCorrectPlace(seven, (2 ; 0)) = true .
-    eq isTileInCorrectPlace(eight, (2 ; 1)) = true .
+    ceq isTileInCorrectPlace(tile, c) = true if c == getCorrectPlace(tile) .
     eq isTileInCorrectPlace(tile, c) = false [ owise ] .
 
 endfm
@@ -179,6 +186,24 @@ fmod MOVES is
     eq move(M, LEFT) = insertElementIntoPuzzle(insertElementIntoPuzzle(M, empty, decrementCol( getEmptyPosition( M ) ) ), getElementByCoords(M, decrementCol(getEmptyPosition(M))), getEmptyPosition(M)) .
     eq move(M, RIGHT) = insertElementIntoPuzzle(insertElementIntoPuzzle(M, empty, incrementCol( getEmptyPosition( M ) ) ), getElementByCoords(M, incrementCol(getEmptyPosition(M))), getEmptyPosition(M)) .
 
+endfm
+
+fmod DISTANCE is
+    protecting INT .
+    protecting MOVES .
+
+    var tile : Value .
+    var X Y : Int .
+    op getDistanceFromCorrectPosition : Value Coords -> Int .
+
+endfm
+
+fmod NODE is
+    protecting INT .
+    protecting MOVES .
+
+    sort Node .
+    op <_&_> : Matrix Int -> Node [ ctor frozen ] .
 endfm
 
 
