@@ -1,0 +1,120 @@
+-------------------------------------------------------------------------------------------
+---coordinates of an element in a matrix
+fmod COORDS is
+    protecting INT .
+
+    sort Coords .
+
+    op _;_ : Int Int -> Coords [ ctor prec 30 ] .
+
+    ---used for searching function in matrix
+    vars x y w z : Int .
+    op incrementRow : Coords -> Coords .
+    eq incrementRow(x ; y) = (x + 1) ; y .
+
+    op incrementCol : Coords -> Coords .
+    eq incrementCol(x ; y) = x ; (y + 1) .
+
+    op decrementRow : Coords -> Coords .
+    eq decrementRow(x ; y) = (x - 1) ; y .
+
+    op decrementCol : Coords -> Coords .
+    eq decrementCol(x ; y) = x ; (y - 1) .
+
+    op calculateDistance : Coords Coords -> Int .
+    eq calculateDistance((x ; y), (w ; z)) = abs(x - w) + abs(y - z) .
+
+endfm
+----------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------
+---elements of vectors and matrices
+fmod ELEMENT is
+    protecting COORDS .
+
+    sort Element .
+
+    ops one two three four five six seven eight empty : -> Element [ ctor ] .
+
+endfm
+-----------------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------------------
+---vectors
+fmod VECTOR is
+    protecting ELEMENT .
+
+    sort Vector .
+    subsort Element < Vector .
+
+    op nil : -> Vector [ ctor ] .
+    op _,_ : Vector Vector -> Vector [ ctor assoc id: nil prec 35] .
+
+    var N : Int .
+    var head E : Element .
+    var tail : Vector .
+
+    ---get an element from a vector giving an index
+
+    op getElementByIndex : Vector Int -> Vector .
+    ---eq getElementByIndex(nil, N) = nil .
+    eq getElementByIndex(head, tail, 0) = head .
+    eq getElementByIndex(head, tail, N) = getElementByIndex(tail, N - 1) .
+    
+    ---replace an element in a vector giving his index
+    op replaceElementIntoVector : Vector Int Element -> Vector .
+    ---eq replaceElementIntoVector(nil, N, E) = nil .
+    eq replaceElementIntoVector((head, tail), 0, E) = E, tail .
+    eq replaceElementIntoVector((head, tail), N, E) = head, replaceElementIntoVector(tail, N - 1, E) [ owise ] . 
+
+endfm
+-----------------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------------------
+---matrices
+fmod MATRIX is
+    protecting VECTOR .
+
+    sort Matrix .
+    subsort Vector < Matrix .
+
+    ---NEED mnil, OTHERWISE IT WILL NOT DISTINGUISH VECTORS FROM MATRICES
+    op mnil : -> Matrix [ ctor ] .
+    op _|_ : Matrix Matrix -> Matrix [ ctor id: mnil prec 40 ] .
+
+    var row tail : Vector .
+    var remaining : Matrix .
+    vars row_index col_index : Int .
+    var E head : Element .
+
+    ---get an element from a matrix given coordinates
+
+    op getElementByCoords : Matrix Coords -> Element .
+    ---eq getElementByCoords(mnil, row, col) = getElementByIndex(nil, col) .
+    eq getElementByCoords(row | remaining, (0 ; col_index)) = getElementByIndex(row, col_index) .
+    eq getElementByCoords(row | remaining, (row_index ; col_index)) = getElementByCoords(remaining, ((row_index - 1) ; col_index)) .
+
+    ---replace an element in matrix with another element specifying its coordinates
+
+    op replaceElementIntoMatrix : Matrix Element Coords -> Matrix .
+    ---eq replaceElementIntoMatrix(nil, E, row_index, col_index) = mnil .
+    eq replaceElementIntoMatrix((row | remaining), E, (0 ; col_index)) = replaceElementIntoVector(row, col_index, E) | remaining .
+    eq replaceElementIntoMatrix((row | remaining), E, (row_index ; col_index)) = row | replaceElementIntoMatrix(remaining, E, ((row_index - 1) ; col_index)) .
+    
+    ---gets an element's index
+    op getIndexFromElement : Vector Element -> Int .
+    eq getIndexFromElement((E, tail), E) = 0 .
+    ---ceq getIndexFromElement(tail, value) = 50 if tail == nil .
+    eq getIndexFromElement((head, tail), E) = 1 + getIndexFromElement(tail, E) [ owise ] .
+
+    op getCoordsFromElement : Matrix Element -> Coords .
+    ceq getCoordsFromElement((row | remaining), E) = 0 ; getIndexFromElement(row, E) if getIndexFromElement(row, E) < 3 .
+    eq getCoordsFromElement((row | remaining), E) = incrementRow(getCoordsFromElement(remaining, E)) [ owise ] .
+
+    ---op getEmptyPosition : Matrix -> Coords .
+    ---eq getEmptyPosition(puzzle) = getPositionFromValue(puzzle, empty) .
+
+    ---op insertElementIntoPuzzle : Matrix Element Coords -> Matrix .
+    ---eq insertElementIntoPuzzle(puzzle, E, (x ; y)) = insertElementIntoMatrix(puzzle, E, x, y) .
+endfm
+-----------------------------------------------------------------------------------------------

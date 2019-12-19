@@ -3,7 +3,7 @@ fmod COORDS is
 
     sort Coords .
 
-    op _;_ : Int Int -> Coords [ ctor ] .
+    op _;_ : Int Int -> Coords [ ctor prec 35 ] .
 
     ---used for searching function in matrix
     vars x y w z : Int .
@@ -21,7 +21,6 @@ fmod COORDS is
 
     op calculateDistance : Coords Coords -> Int .
     eq calculateDistance((x ; y), (w ; z)) = abs(x - w) + abs(y - z) .
-
 
 endfm
 
@@ -58,7 +57,7 @@ fmod VECTOR is
     subsort Element < Vector .
 
     op _,_ : Vector Vector -> Vector [ assoc id: nil prec 40 ] .
-    op nil : -> Vector [ ctor ] .
+    op nil : -> Element [ ctor ] .
 
     op len : Vector -> Int .
 
@@ -220,8 +219,8 @@ fmod CHOICE is
     vars p q : Matrix .
     var m n : Move .
     var score_p score_q : Int .
-    op getChoice : Matrix Move -> Choice .
-    eq getChoice(p, m) = < move(p, m) & calculatePuzzleScore(move(p, m), 0) > .
+    op getChoice : Move Matrix -> Choice .
+    eq getChoice(m, p) = < move(p, m) & calculatePuzzleScore(move(p, m), 0) > .
 
     op minChoice : Choice Choice -> Choice .
     ceq minChoice(< p & score_p >, < q & score_q >) = < p & score_p > if score_p < score_q .
@@ -233,13 +232,14 @@ fmod CHOICE is
     subsort Choice < Element .
     subsort Move < Element .
     var head : Move .
-    var tail : Vector .
-    op selectChoice : Matrix Vector -> Choice .
-    ceq selectChoice(p, tail) = < mnil & 10000 > if tail == nil .
-    eq selectChoice(p, (head, tail)) = minChoice(getChoice(p, head), selectChoice(p, tail)) [ owise ] .
+    var tail row : Vector .
+    var moves : Vector .
+    op selectChoice : Vector Matrix -> Choice .
+    eq selectChoice(nil, p) = < mnil & 10000 > .
+    eq selectChoice((head, tail), p) = minChoice(getChoice(head, p), selectChoice(tail, p)) [ owise ] .
 
-    op next : Matrix Vector -> Matrix .
-    eq next(p, tail) = getPuzzleFromChoice(selectChoice(p, tail)) .
+    op next : Vector Matrix -> Matrix .
+    eq next(moves, p) = getPuzzleFromChoice(selectChoice(moves, p)) .
 endfm
 
 
@@ -254,7 +254,10 @@ mod SLIDING-PUZZLE-GAME is
     eq initial = (three, one, two) | (seven, empty, four) | (five, eight, six) .
 
     var puzzle : Matrix .
-    rl [move] :
-        puzzle => next(puzzle, getAvailableMoves(getEmptyPosition(puzzle))) .
-
+    ---rl [init] : puzzle => next(initial, getAvailableMoves(getEmptyPosition(initial))) .
+    rl [move] : puzzle => next(DOWN, puzzle) .
 endm
+
+
+ ---seven,empty,four, getElementByIndex(nil, 1), 1 ; 1) & calculatePuzzleScore(insertElementIntoPuzzle(three,
+---    one,two | seven,empty,four, getElementByIndex(nil, 1), 1 ; 1), 0) >, < mnil & 10000 >))
