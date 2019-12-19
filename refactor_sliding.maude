@@ -80,26 +80,26 @@ fmod MATRIX is
 
     ---NEED mnil, OTHERWISE IT WILL NOT DISTINGUISH VECTORS FROM MATRICES
     op mnil : -> Matrix [ ctor ] .
-    op _|_ : Matrix Matrix -> Matrix [ ctor id: mnil prec 40 ] .
+    op _|_ : Matrix Matrix -> Matrix [ ctor assoc id: mnil prec 40 ] .
 
     var row tail : Vector .
-    var remaining : Matrix .
+    var remaining M : Matrix .
     vars row_index col_index : Int .
     var E head : Element .
 
     ---get an element from a matrix given coordinates
 
     op getElementByCoords : Matrix Coords -> Element .
-    ---eq getElementByCoords(mnil, row, col) = getElementByIndex(nil, col) .
+    ---eq getElementByCoords(mnil, (row_index ; col_index)) = getElementByIndex(nil, col_index) .
     eq getElementByCoords(row | remaining, (0 ; col_index)) = getElementByIndex(row, col_index) .
     eq getElementByCoords(row | remaining, (row_index ; col_index)) = getElementByCoords(remaining, ((row_index - 1) ; col_index)) .
 
     ---replace an element in matrix with another element specifying its coordinates
 
-    op replaceElementIntoMatrix : Matrix Element Coords -> Matrix .
-    ---eq replaceElementIntoMatrix(nil, E, row_index, col_index) = mnil .
-    eq replaceElementIntoMatrix((row | remaining), E, (0 ; col_index)) = replaceElementIntoVector(row, col_index, E) | remaining .
-    eq replaceElementIntoMatrix((row | remaining), E, (row_index ; col_index)) = row | replaceElementIntoMatrix(remaining, E, ((row_index - 1) ; col_index)) .
+    op replaceElementIntoMatrix : Matrix Coords Element -> Matrix .
+    ---eq replaceElementIntoMatrix(mnil, (row_index ; col_index), E) = mnil .
+    eq replaceElementIntoMatrix((row | remaining), (0 ; col_index), E) = replaceElementIntoVector(row, col_index, E) | remaining .
+    eq replaceElementIntoMatrix((row | remaining), (row_index ; col_index), E) = row | replaceElementIntoMatrix(remaining, ((row_index - 1) ; col_index), E) .
     
     ---gets an element's index
     op getIndexFromElement : Vector Element -> Int .
@@ -107,14 +107,62 @@ fmod MATRIX is
     ---ceq getIndexFromElement(tail, value) = 50 if tail == nil .
     eq getIndexFromElement((head, tail), E) = 1 + getIndexFromElement(tail, E) [ owise ] .
 
+
+    ---gets an element's coordinates
     op getCoordsFromElement : Matrix Element -> Coords .
     ceq getCoordsFromElement((row | remaining), E) = 0 ; getIndexFromElement(row, E) if getIndexFromElement(row, E) < 3 .
     eq getCoordsFromElement((row | remaining), E) = incrementRow(getCoordsFromElement(remaining, E)) [ owise ] .
 
-    ---op getEmptyPosition : Matrix -> Coords .
-    ---eq getEmptyPosition(puzzle) = getPositionFromValue(puzzle, empty) .
+    ---gets empty coordinates
+    op getEmptyCoords : Matrix -> Coords .
+    eq getEmptyCoords(M) = getCoordsFromElement(M, empty) .
 
-    ---op insertElementIntoPuzzle : Matrix Element Coords -> Matrix .
-    ---eq insertElementIntoPuzzle(puzzle, E, (x ; y)) = insertElementIntoMatrix(puzzle, E, x, y) .
 endfm
 -----------------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------------------
+---moves
+fmod MOVE is 
+    protecting MATRIX .
+
+    sort Move .
+    subsort Move < Element .
+    subsort Bool < Element .
+
+    ops LEFT UP RIGHT DOWN : -> Move [ ctor ] .
+
+    ---returns the move based on its index, each index refers to a move (respectively 0 -> LEFT, 1 -> UP, 2 -> RIGHT, 3 -> DOWN)
+
+    op getMoveFromIndex : Int Bool -> Move .
+    eq getMoveFromIndex(0, true) = LEFT .
+    eq getMoveFromIndex(1, true) = UP .
+    eq getMoveFromIndex(2, true) = RIGHT .
+    eq getMoveFromIndex(3, true) = DOWN .
+    eq getMoveFromIndex(N:Int, B:Bool) = nil [ owise ] .
+
+    ---returns a move vector
+    vars X Y : Int .
+    op getAvailableMoves : Coords -> Vector .
+    eq getAvailableMoves(X ; Y) = getMoveFromIndex(0, Y > 0), getMoveFromIndex(1, X > 0), getMoveFromIndex(2, Y < 2), getMoveFromIndex(3, X < 2) .
+
+    ---moves the empty piece of the puzzle
+    var M : Matrix .
+    op move : Matrix Move -> Matrix .
+    eq move(M, UP) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, decrementRow(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, decrementRow(getEmptyCoords(M)))) .
+    eq move(M, DOWN) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, incrementRow(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, incrementRow(getEmptyCoords(M)))) .
+    eq move(M, LEFT) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, decrementCol(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, decrementCol(getEmptyCoords(M)))) .
+    eq move(M, RIGHT) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, incrementCol(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, incrementCol(getEmptyCoords(M)))) .
+endfm
+-----------------------------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------------------------
+mod SLIDING-GAME is
+    protecting MOVE .
+
+    op initial : -> Matrix .
+    eq initial = (three, one, two) | (seven, empty, four) | (five, eight, six) .
+
+    var MA : Matrix .
+    rl [move] : MA => move(MA, DOWN) .
+endm
