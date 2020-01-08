@@ -196,7 +196,7 @@ fmod DISTANCE is
     var tail : Vector .
     var row_index col_index : Int .
     op calculateRowScore : Vector Int Int -> Int .
-    ceq calculateRowScore(tail, row_index, col_index) = 0 if tail == nil .
+    ceq calculateRowScore(tail, row_index, col_indexValue) = 0 if tail == nil .
     eq calculateRowScore((head, tail), row_index, col_index) = getDistanceFromCorrectPosition(head, (row_index ; col_index)) + calculateRowScore(tail, row_index, col_index + 1) .
 
     var row : Vector .
