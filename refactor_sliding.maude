@@ -163,7 +163,7 @@ fmod MOVE is
     ---eq move(M, DOWN) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, incrementRow(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, incrementRow(getEmptyCoords(M)))) .
     eq move(M, LEFT) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, decrementCol(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, decrementCol(getEmptyCoords(M)))) .
     eq move(M, RIGHT) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, incrementCol(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, incrementCol(getEmptyCoords(M)))) .
-    eq move(M, DOWN) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, incrementRow(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, incrementCol(getEmptyCoords(M)))) .
+    eq move(M, DOWN) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, incrementRow(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, incrementRow(getEmptyCoords(M)))) .
 endfm
 -----------------------------------------------------------------------------------------------
 
