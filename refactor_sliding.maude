@@ -83,6 +83,11 @@ fmod VECTOR is
     ceq removeElementFromVector((head, tail), E) = tail if head == E .
     eq removeElementFromVector((head, tail), E) = head, removeElementFromVector(tail, E) [ owise ] .
 
+    op isElementInVector : Vector Element -> Bool .
+    eq isElementInVector(nil, E) = false .
+    ceq isElementInVector((head, tail), E) = true if head == E .
+    eq isElementInVector((head, tail), E) = isElementInVector(tail, E) [ owise ] . 
+
 endfm
 -----------------------------------------------------------------------------------------------
 
@@ -218,6 +223,13 @@ fmod PUZZLE is
 
     op _$_ : Matrix Move -> Puzzle [ ctor frozen prec 50 ] .
 
+    var p : Matrix .
+    vars m d : Move .
+    op canMove : Puzzle Move -> Bool .
+    ---ceq canMove((p $ m), d) = false if m == getComplementaryMove(d) .
+    ceq canMove((p $ m), d) = true if isElementInVector(getAvailableMoves(getEmptyCoords(p), m), d) .
+    eq canMove((p $ m), d) = false [ owise ] .
+
 endfm
 -----------------------------------------------------------------------------------------------
 
@@ -266,9 +278,9 @@ mod SLIDING-GAME is
 
     op initial : -> Puzzle .
     ---eq initial = (((three, one, two) | (seven, four, empty) | (five, eight, six)) $ I) .
-    ---eq initial = (((one, two, three) | (empty, four, six) | (seven, five, eight)) $ I) .
+    eq initial = (((one, two, three) | (empty, four, six) | (seven, five, eight)) $ I) .
     ---eq initial = (((seven, two, one) | (five, empty, four) | (eight, three, six)) $ I) .
-    eq initial = (((one, two, three) | (four, five, six) | (eight, seven, empty)) $ I) .
+    ---eq initial = (((one, two, three) | (four, five, six) | (eight, seven, empty)) $ I) .
 
     var M : Puzzle .
     var m : Move .
@@ -279,5 +291,9 @@ mod SLIDING-GAME is
     ---NEED TO CONSIDER A MATRIX COMPOSED BY 3 VECTORS, OTHERWISE THE PROGRAM WILL CONSIDER ONLY MATRICES COMPOSED BY 2
     vars V W Y : Vector .
     ----rl [move] : V | W | Y => move(V | W | Y, DOWN) .
-    rl [move] : ((V | W | Y) $ m) => next((V | W | Y) $ m) .
+    ---rl [move] : ((V | W | Y) $ m) => next((V | W | Y) $ m) .
+    crl [right] : ((V | W | Y) $ m) => (move((V | W | Y), RIGHT) $ RIGHT) if canMove(((V | W | Y) $ m), RIGHT) .
+    crl [left] : ((V | W | Y) $ m) => (move((V | W | Y), LEFT) $ LEFT) if canMove(((V | W | Y) $ m), LEFT) .
+    crl [up] : ((V | W | Y) $ m) => (move((V | W | Y), UP) $ UP) if canMove(((V | W | Y) $ m), UP) .
+    crl [down] : ((V | W | Y) $ m) => (move((V | W | Y), DOWN) $ DOWN) if canMove(((V | W | Y) $ m), DOWN) .
 endm
