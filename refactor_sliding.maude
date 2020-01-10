@@ -20,11 +20,7 @@ fmod COORDS is
 
     op decrementCol : Coords -> Coords .
     eq decrementCol(x ; y) = x ; (y - 1) .
-
-    op calculateDistance : Coords Coords -> Int .
-    eq calculateDistance((x ; y), (w ; z)) = abs(x - w) + abs(y - z) .
     
-
 endfm
 ----------------------------------------------------------------------------------------------
 
@@ -37,15 +33,17 @@ fmod ELEMENT is
 
     ops one two three four five six seven eight empty : -> Element [ ctor ] .
 
-    op getCorrectPlace : Element -> Coords .
-    eq getCorrectPlace(one) = (0 ; 0) .
-    eq getCorrectPlace(two) = (0 ; 1) .
-    eq getCorrectPlace(three) = (0 ; 2) .
-    eq getCorrectPlace(four) = (1 ; 0) .
-    eq getCorrectPlace(five) = (1 ; 1) .
-    eq getCorrectPlace(six) = (1 ; 2) .
-    eq getCorrectPlace(seven) = (2 ; 0) .
-    eq getCorrectPlace(eight) = (2 ; 1) .
+    ---from element label to value
+    op toValue : Element -> Int .
+    eq toValue(empty) = 0 .
+    eq toValue(one) = 1 .
+    eq toValue(two) = 2 .
+    eq toValue(three) = 3 .
+    eq toValue(four) = 4 .
+    eq toValue(five) = 5 .
+    eq toValue(six) = 6 .
+    eq toValue(seven) = 7 .
+    eq toValue(eight) = 8 .
 
 endfm
 -----------------------------------------------------------------------------------------------
@@ -68,13 +66,11 @@ fmod VECTOR is
     ---get an element from a vector giving an index
 
     op getElementByIndex : Vector Int -> Vector .
-    ---eq getElementByIndex(nil, N) = nil .
     eq getElementByIndex(head, tail, 0) = head .
     eq getElementByIndex(head, tail, N) = getElementByIndex(tail, N - 1) .
     
     ---replace an element in a vector giving his index
     op replaceElementIntoVector : Vector Int Element -> Vector .
-    ---eq replaceElementIntoVector(nil, N, E) = nil .
     eq replaceElementIntoVector((head, tail), 0, E) = E, tail .
     eq replaceElementIntoVector((head, tail), N, E) = head, replaceElementIntoVector(tail, N - 1, E) [ owise ] . 
 
@@ -111,21 +107,18 @@ fmod MATRIX is
     ---get an element from a matrix given coordinates
 
     op getElementByCoords : Matrix Coords -> Element [ strat (1 2 0)] .
-    ---eq getElementByCoords(mnil, (row_index ; col_index)) = getElementByIndex(nil, col_index) .
     eq getElementByCoords(row | remaining, (0 ; col_index)) = getElementByIndex(row, col_index) .
     eq getElementByCoords(row | remaining, (row_index ; col_index)) = getElementByCoords(remaining, ((row_index - 1) ; col_index)) .
 
     ---replace an element in matrix with another element specifying its coordinates
 
     op replaceElementIntoMatrix : Matrix Coords Element -> Matrix [ strat (2 3 1 0)] .
-    ---eq replaceElementIntoMatrix(mnil, (row_index ; col_index), E) = mnil .
     eq replaceElementIntoMatrix((row | remaining), (0 ; col_index), E) = replaceElementIntoVector(row, col_index, E) | remaining .
     eq replaceElementIntoMatrix((row | remaining), (row_index ; col_index), E) = row | replaceElementIntoMatrix(remaining, ((row_index - 1) ; col_index), E) .
     
     ---gets an element's index
     op getIndexFromElement : Vector Element -> Int .
     eq getIndexFromElement((E, tail), E) = 0 .
-    ---ceq getIndexFromElement(tail, value) = 50 if tail == nil .
     eq getIndexFromElement((head, tail), E) = 1 + getIndexFromElement(tail, E) [ owise ] .
 
 
@@ -137,6 +130,11 @@ fmod MATRIX is
     ---gets empty coordinates
     op getEmptyCoords : Matrix -> Coords .
     eq getEmptyCoords(M) = getCoordsFromElement(M, empty) .
+
+    ---vectorize a matrix: used for checking solvability of a puzzle
+    op vectorize : Matrix -> Vector .
+    eq vectorize(mnil) = nil .
+    eq vectorize(row | remaining) = row , vectorize(remaining) [ owise ] .
 
 endfm
 -----------------------------------------------------------------------------------------------
@@ -174,7 +172,6 @@ fmod MOVE is
     var m : Move .
     op getAvailableMoves : Coords Move -> Vector .
     eq getAvailableMoves((X ; Y), I) = getMoveFromIndex(0, Y > 0), getMoveFromIndex(1, X > 0), getMoveFromIndex(2, Y < 2), getMoveFromIndex(3, X < 2) .
-    ---eq getAvailableMoves((X ; Y), m) = replaceElementIntoVector((getMoveFromIndex(0, Y > 0), getMoveFromIndex(1, X > 0), getMoveFromIndex(2, Y < 2), getMoveFromIndex(3, X < 2)), getIndexFromElement((getMoveFromIndex(0, Y > 0), getMoveFromIndex(1, X > 0), getMoveFromIndex(2, Y < 2), getMoveFromIndex(3, X < 2)), getComplementaryMove(m)), nil) [ owise ] .
     eq getAvailableMoves((X ; Y), m) = removeElementFromVector((getMoveFromIndex(0, Y > 0), getMoveFromIndex(1, X > 0), getMoveFromIndex(2, Y < 2), getMoveFromIndex(3, X < 2)), getComplementaryMove(m)) [ owise ] .
 
     ---moves the empty piece of the puzzle
@@ -186,38 +183,9 @@ fmod MOVE is
     eq move(M, DOWN) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, incrementRow(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, incrementRow(getEmptyCoords(M)))) .
 endfm
 -----------------------------------------------------------------------------------------------
-
------------------------------------------------------------------------------------------------
----distance
-fmod DISTANCE is
-    protecting MOVE .
-
-    var E : Element .
-    var X Y : Int .
-    var c : Coords .
-    op getDistanceFromCorrectPosition : Element Coords -> Int .
-    eq getDistanceFromCorrectPosition(empty, c) = 0 .
-    eq getDistanceFromCorrectPosition(E, c) = calculateDistance(c, getCorrectPlace(E)) [ owise ] .
-
-    var head : Element .
-    var tail : Vector .
-    var row_index col_index : Int .
-    op calculateRowScore : Vector Int Int -> Int .
-    ceq calculateRowScore(tail, row_index, col_index) = 0 if tail == nil .
-    eq calculateRowScore((head, tail), row_index, col_index) = getDistanceFromCorrectPosition(head, (row_index ; col_index)) + calculateRowScore(tail, row_index, col_index + 1) .
-
-    var row : Vector .
-    var p : Matrix .
-
-    op calculatePuzzleScore : Matrix Int -> Int .
-    ceq calculatePuzzleScore(p, row_index) = 0 if p == mnil .
-    eq calculatePuzzleScore((row | p), row_index) = calculateRowScore(row, row_index, 0) + calculatePuzzleScore(p, row_index + 1) .
-
-endfm
------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------
 fmod PUZZLE is
-    protecting DISTANCE .
+    protecting MOVE .
 
     sort Puzzle .
 
@@ -226,61 +194,41 @@ fmod PUZZLE is
     var p : Matrix .
     vars m d : Move .
     op canMove : Puzzle Move -> Bool .
-    ---ceq canMove((p $ m), d) = false if m == getComplementaryMove(d) .
     ceq canMove((p $ m), d) = true if isElementInVector(getAvailableMoves(getEmptyCoords(p), m), d) .
     eq canMove((p $ m), d) = false [ owise ] .
 
+    vars first second : Int .
+    op inversionValue : Int Int -> Int .
+    eq inversionValue(first, 0) = 0 .
+    eq inversionValue(0, second) = 0 .
+    ceq inversionValue(first,  second) = 1 if first > second .
+    eq inversionValue(first, second) = 0 [ owise ] .
+
+    var head successor : Element .
+    var tail : Vector .
+    op getInversionsOfVector : Vector -> Int .
+    eq getInversionsOfVector(head, nil) = 0 .
+    eq getInversionsOfVector((head, successor), tail) = inversionValue(toValue(head), toValue(successor)) + getInversionsOfVector(head, tail) [ owise ] .
+
+    op getTotalInversions : Vector -> Int .
+    eq getTotalInversions(nil) = 0 .
+    eq getTotalInversions(head, tail) = getInversionsOfVector(head, tail) + getTotalInversions(tail) .
+
+    op isSolvable : Puzzle -> Bool .
+    ceq isSolvable(p $ m) = true if getTotalInversions(vectorize(p)) rem 2 == 0 .
+    eq isSolvable(p $ m) = false [ owise ] .
+
 endfm
 -----------------------------------------------------------------------------------------------
-
------------------------------------------------------------------------------------------------
----choice
-fmod CHOICE is
-    protecting PUZZLE .
-
-    sort Choice .
-    op <_&_&_> : Matrix Move Int -> Choice [ ctor frozen prec 45 ] .
-
-    vars p q : Matrix .
-    var m n : Move .
-    var score_p score_q : Int .
-    op getChoice : Puzzle -> Choice .
-    eq getChoice(p $ m) = < move(p, m) & m & calculatePuzzleScore(move(p, m), 0) > .
-
-    op minChoice : Choice Choice -> Choice .
-    ceq minChoice(< p & m & score_p >, < q & n & score_q >) = < p & m & score_p > if score_p < score_q .
-    eq minChoice(< p & m & score_p >, < q & n & score_q >) = < q & n & score_q > [ owise ] .
-
-    op getPuzzleFromChoice : Choice -> Puzzle .
-    eq getPuzzleFromChoice(< p & m & score_p >) = p $ m .
-
-    op getMoveFromChoice : Choice -> Move .
-    eq getMoveFromChoice(< p & m & score_p >) = m .
-
-    subsort Choice < Element .
-    subsort Move < Element .
-    var head : Move .
-    var tail row : Vector .
-    var moves : Vector .
-    op selectChoice : Vector Puzzle -> Choice .
-    eq selectChoice(nil, p $ m) = < mnil & m & 10000 > .
-    eq selectChoice((head, tail), p $ m) = minChoice(getChoice(p $ head), selectChoice(tail, p $ m)) [ owise ] .
-
-    ---op next : Vector Matrix -> Puzzle .
-    ---eq next(moves, p) = getPuzzleFromChoice(selectChoice(moves, p)) .
-
-    op next : Puzzle -> Puzzle .
-    eq next(p $ m) = getPuzzleFromChoice(selectChoice(getAvailableMoves(getEmptyCoords(p), m), p $ m)) .
-endfm
 -----------------------------------------------------------------------------------------------
 mod SLIDING-GAME is
-    protecting CHOICE .
+    protecting PUZZLE .
 
     op initial : -> Puzzle .
     ---eq initial = (((three, one, two) | (seven, four, empty) | (five, eight, six)) $ I) .
-    eq initial = (((one, two, three) | (empty, four, six) | (seven, five, eight)) $ I) .
+    ---eq initial = (((one, two, three) | (empty, four, six) | (seven, five, eight)) $ I) .
     ---eq initial = (((seven, two, one) | (five, empty, four) | (eight, three, six)) $ I) .
-    ---eq initial = (((one, two, three) | (four, five, six) | (eight, seven, empty)) $ I) .
+    eq initial = (((one, two, three) | (four, five, six) | (eight, seven, empty)) $ I) .
 
     var M : Puzzle .
     var m : Move .
@@ -290,8 +238,6 @@ mod SLIDING-GAME is
 
     ---NEED TO CONSIDER A MATRIX COMPOSED BY 3 VECTORS, OTHERWISE THE PROGRAM WILL CONSIDER ONLY MATRICES COMPOSED BY 2
     vars V W Y : Vector .
-    ----rl [move] : V | W | Y => move(V | W | Y, DOWN) .
-    ---rl [move] : ((V | W | Y) $ m) => next((V | W | Y) $ m) .
     crl [right] : ((V | W | Y) $ m) => (move((V | W | Y), RIGHT) $ RIGHT) if canMove(((V | W | Y) $ m), RIGHT) .
     crl [left] : ((V | W | Y) $ m) => (move((V | W | Y), LEFT) $ LEFT) if canMove(((V | W | Y) $ m), LEFT) .
     crl [up] : ((V | W | Y) $ m) => (move((V | W | Y), UP) $ UP) if canMove(((V | W | Y) $ m), UP) .
