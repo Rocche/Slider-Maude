@@ -20,6 +20,12 @@ fmod COORDS is
 
     op decrementCol : Coords -> Coords .
     eq decrementCol(x ; y) = x ; (y - 1) .
+
+    op getRow : Coords -> Int .
+    eq getRow(x ; y) = x .
+
+    op getCol : Coords -> Int .
+    eq getCol(x ; y) = y .
     
 endfm
 ----------------------------------------------------------------------------------------------
@@ -31,7 +37,7 @@ fmod ELEMENT is
 
     sort Element .
 
-    ops one two three four five six seven eight empty : -> Element [ ctor ] .
+    ops one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen empty : -> Element [ ctor ] .
 
     ---from element label to value
     op toValue : Element -> Int .
@@ -44,6 +50,13 @@ fmod ELEMENT is
     eq toValue(six) = 6 .
     eq toValue(seven) = 7 .
     eq toValue(eight) = 8 .
+    eq toValue(nine) = 9 .
+    eq toValue(ten) = 10 .
+    eq toValue(eleven) = 11 .
+    eq toValue(twelve) = 12 .
+    eq toValue(thirteen) = 13 .
+    eq toValue(fourteen) = 14 .
+    eq toValue(fifteen) = 15 .
 
 endfm
 -----------------------------------------------------------------------------------------------
@@ -124,7 +137,7 @@ fmod MATRIX is
 
     ---gets an element's coordinates
     op getCoordsFromElement : Matrix Element -> Coords .
-    ceq getCoordsFromElement((row | remaining), E) = 0 ; getIndexFromElement(row, E) if getIndexFromElement(row, E) < 3 .
+    ceq getCoordsFromElement((row | remaining), E) = 0 ; getIndexFromElement(row, E) if getIndexFromElement(row, E) < 4 .
     eq getCoordsFromElement((row | remaining), E) = incrementRow(getCoordsFromElement(remaining, E)) [ owise ] .
 
     ---gets empty coordinates
@@ -215,7 +228,8 @@ fmod PUZZLE is
     eq getTotalInversions(head, tail) = getInversionsOfVector(head, tail) + getTotalInversions(tail) .
 
     op isSolvable : Puzzle -> Bool .
-    ceq isSolvable(p $ m) = true if getTotalInversions(vectorize(p)) rem 2 == 0 .
+    ceq isSolvable(p $ m) = true if getCol(getEmptyCoords(p)) rem 2 == 0 /\ getTotalInversions(vectorize(p)) rem 2 == 1 .
+    ceq isSolvable(p $ m) = true if getCol(getEmptyCoords(p)) rem 2 == 1 /\ getTotalInversions(vectorize(p)) rem 2 == 0 .
     eq isSolvable(p $ m) = false [ owise ] .
 
 endfm
@@ -225,21 +239,25 @@ mod SLIDING-GAME is
     protecting PUZZLE .
 
     op initial : -> Puzzle .
-    ---eq initial = (((three, one, two) | (seven, four, empty) | (five, eight, six)) $ I) .
+    eq initial = (((three, one, two, fifteen) | (seven, four, empty, eleven) | (five, eight, six, thirteen) | (ten, nine, twelve, fourteen)) $ I) .
     ---eq initial = (((one, two, three) | (empty, four, six) | (seven, five, eight)) $ I) .
     ---eq initial = (((seven, two, one) | (five, empty, four) | (eight, three, six)) $ I) .
-    eq initial = (((one, two, three) | (four, five, six) | (eight, seven, empty)) $ I) .
+    ---eq initial = (((one, two, three) | (four, five, six) | (eight, seven, empty)) $ I) .
 
     var M : Puzzle .
     var m : Move .
     op isSuccess : Puzzle -> Bool .
-    eq isSuccess(((one, two, three) | (four, five, six) | (seven, eight, empty)) $ m) = true .
+    eq isSuccess(((one, two, three, four) | (five, six, seven, eight) | (nine, ten, eleven, twelve) | (thirteen, fourteen, fifteen, empty)) $ m) = true .
     eq isSuccess(M) = false [ owise ] .
 
     ---NEED TO CONSIDER A MATRIX COMPOSED BY 3 VECTORS, OTHERWISE THE PROGRAM WILL CONSIDER ONLY MATRICES COMPOSED BY 2
-    vars V W Y : Vector .
-    crl [right] : ((V | W | Y) $ m) => (move((V | W | Y), RIGHT) $ RIGHT) if canMove(((V | W | Y) $ m), RIGHT) .
-    crl [left] : ((V | W | Y) $ m) => (move((V | W | Y), LEFT) $ LEFT) if canMove(((V | W | Y) $ m), LEFT) .
-    crl [up] : ((V | W | Y) $ m) => (move((V | W | Y), UP) $ UP) if canMove(((V | W | Y) $ m), UP) .
-    crl [down] : ((V | W | Y) $ m) => (move((V | W | Y), DOWN) $ DOWN) if canMove(((V | W | Y) $ m), DOWN) .
+    vars V W Y Z : Vector .
+    ---crl [right] : ((V | W | Y) $ m) => (move((V | W | Y), RIGHT) $ RIGHT) if canMove(((V | W | Y) $ m), RIGHT) .
+    ---crl [left] : ((V | W | Y) $ m) => (move((V | W | Y), LEFT) $ LEFT) if canMove(((V | W | Y) $ m), LEFT) .
+    ---crl [up] : ((V | W | Y) $ m) => (move((V | W | Y), UP) $ UP) if canMove(((V | W | Y) $ m), UP) .
+    ---crl [down] : ((V | W | Y) $ m) => (move((V | W | Y), DOWN) $ DOWN) if canMove(((V | W | Y) $ m), DOWN) .
+    crl [right] : ((V | W | Y | Z) $ m) => (move((V | W | Y | Z), RIGHT) $ RIGHT) if canMove(((V | W | Y | Z) $ m), RIGHT) .
+    crl [left] : ((V | W | Y | Z) $ m) => (move((V | W | Y | Z), LEFT) $ LEFT) if canMove(((V | W | Y | Z) $ m), LEFT) .
+    crl [up] : ((V | W | Y | Z) $ m) => (move((V | W | Y | Z), UP) $ UP) if canMove(((V | W | Y | Z) $ m), UP) .
+    crl [down] : ((V | W | Y | Z) $ m) => (move((V | W | Y | Z), DOWN) $ DOWN) if canMove(((V | W | Y | Z) $ m), DOWN) .
 endm

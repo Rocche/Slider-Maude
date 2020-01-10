@@ -1,0 +1,249 @@
+-------------------------------------------------------------------------------------------
+---coordinates of an element in a matrix
+fmod COORDS is
+    protecting INT .
+
+    sort Coords .
+
+    op _;_ : Int Int -> Coords [ ctor prec 30 ] .
+
+    ---used for searching function in matrix
+    vars x y w z : Int .
+    op incrementRow : Coords -> Coords .
+    eq incrementRow(x ; y) = (x + 1) ; y .
+
+    op incrementCol : Coords -> Coords .
+    eq incrementCol(x ; y) = x ; (y + 1) .
+
+    op decrementRow : Coords -> Coords .
+    eq decrementRow(x ; y) = (x - 1) ; y .
+
+    op decrementCol : Coords -> Coords .
+    eq decrementCol(x ; y) = x ; (y - 1) .
+    
+endfm
+----------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------
+---elements of vectors and matrices
+fmod ELEMENT is
+    protecting COORDS .
+
+    sort Element .
+
+    ops one two three four five six seven eight empty : -> Element [ ctor ] .
+
+    ---from element label to value
+    op toValue : Element -> Int .
+    eq toValue(empty) = 0 .
+    eq toValue(one) = 1 .
+    eq toValue(two) = 2 .
+    eq toValue(three) = 3 .
+    eq toValue(four) = 4 .
+    eq toValue(five) = 5 .
+    eq toValue(six) = 6 .
+    eq toValue(seven) = 7 .
+    eq toValue(eight) = 8 .
+
+endfm
+-----------------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------------------
+---vectors
+fmod VECTOR is
+    protecting ELEMENT .
+
+    sort Vector .
+    subsort Element < Vector .
+
+    op nil : -> Vector [ ctor ] .
+    op _,_ : Vector Vector -> Vector [ ctor assoc id: nil prec 35] .
+
+    var N : Int .
+    var head E : Element .
+    var tail : Vector .
+
+    ---get an element from a vector giving an index
+
+    op getElementByIndex : Vector Int -> Vector .
+    eq getElementByIndex(head, tail, 0) = head .
+    eq getElementByIndex(head, tail, N) = getElementByIndex(tail, N - 1) .
+    
+    ---replace an element in a vector giving his index
+    op replaceElementIntoVector : Vector Int Element -> Vector .
+    eq replaceElementIntoVector((head, tail), 0, E) = E, tail .
+    eq replaceElementIntoVector((head, tail), N, E) = head, replaceElementIntoVector(tail, N - 1, E) [ owise ] . 
+
+    op removeElementFromVector : Vector Element -> Vector .
+    eq removeElementFromVector(nil, E) = nil .
+    ceq removeElementFromVector((head, tail), E) = tail if head == E .
+    eq removeElementFromVector((head, tail), E) = head, removeElementFromVector(tail, E) [ owise ] .
+
+    op isElementInVector : Vector Element -> Bool .
+    eq isElementInVector(nil, E) = false .
+    ceq isElementInVector((head, tail), E) = true if head == E .
+    eq isElementInVector((head, tail), E) = isElementInVector(tail, E) [ owise ] . 
+
+endfm
+-----------------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------------------
+---matrices
+fmod MATRIX is
+    protecting VECTOR .
+
+    sort Matrix .
+    subsort Vector < Matrix .
+
+    ---NEED mnil, OTHERWISE IT WILL NOT DISTINGUISH VECTORS FROM MATRICES
+    op mnil : -> Matrix [ ctor ] .
+    op _|_ : Matrix Matrix -> Matrix [ ctor assoc id: mnil prec 40 ] .
+
+    var row tail : Vector .
+    var remaining M : Matrix .
+    vars row_index col_index : Int .
+    var E head : Element .
+
+    ---get an element from a matrix given coordinates
+
+    op getElementByCoords : Matrix Coords -> Element [ strat (1 2 0)] .
+    eq getElementByCoords(row | remaining, (0 ; col_index)) = getElementByIndex(row, col_index) .
+    eq getElementByCoords(row | remaining, (row_index ; col_index)) = getElementByCoords(remaining, ((row_index - 1) ; col_index)) .
+
+    ---replace an element in matrix with another element specifying its coordinates
+
+    op replaceElementIntoMatrix : Matrix Coords Element -> Matrix [ strat (2 3 1 0)] .
+    eq replaceElementIntoMatrix((row | remaining), (0 ; col_index), E) = replaceElementIntoVector(row, col_index, E) | remaining .
+    eq replaceElementIntoMatrix((row | remaining), (row_index ; col_index), E) = row | replaceElementIntoMatrix(remaining, ((row_index - 1) ; col_index), E) .
+    
+    ---gets an element's index
+    op getIndexFromElement : Vector Element -> Int .
+    eq getIndexFromElement((E, tail), E) = 0 .
+    eq getIndexFromElement((head, tail), E) = 1 + getIndexFromElement(tail, E) [ owise ] .
+
+
+    ---gets an element's coordinates
+    op getCoordsFromElement : Matrix Element -> Coords .
+    ceq getCoordsFromElement((row | remaining), E) = 0 ; getIndexFromElement(row, E) if getIndexFromElement(row, E) < 3 .
+    eq getCoordsFromElement((row | remaining), E) = incrementRow(getCoordsFromElement(remaining, E)) [ owise ] .
+
+    ---gets empty coordinates
+    op getEmptyCoords : Matrix -> Coords .
+    eq getEmptyCoords(M) = getCoordsFromElement(M, empty) .
+
+    ---vectorize a matrix: used for checking solvability of a puzzle
+    op vectorize : Matrix -> Vector .
+    eq vectorize(mnil) = nil .
+    eq vectorize(row | remaining) = row , vectorize(remaining) [ owise ] .
+
+endfm
+-----------------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------------------
+---moves
+fmod MOVE is 
+    protecting MATRIX .
+
+    sort Move .
+    subsort Move < Element .
+    subsort Bool < Element .
+
+    ops LEFT UP RIGHT DOWN I : -> Move [ ctor ] .
+
+    ---returns the move based on its index, each index refers to a move (respectively 0 -> LEFT, 1 -> UP, 2 -> RIGHT, 3 -> DOWN)
+
+    op getMoveFromIndex : Int Bool -> Move .
+    eq getMoveFromIndex(0, true) = LEFT .
+    eq getMoveFromIndex(1, true) = UP .
+    eq getMoveFromIndex(2, true) = RIGHT .
+    eq getMoveFromIndex(3, true) = DOWN .
+    eq getMoveFromIndex(N:Int, B:Bool) = nil [ owise ] .
+
+    ---returns the complementary move
+
+    op getComplementaryMove : Move -> Move .
+    eq getComplementaryMove(UP) = DOWN .
+    eq getComplementaryMove(RIGHT) = LEFT .
+    eq getComplementaryMove(DOWN) = UP .
+    eq getComplementaryMove(LEFT) = RIGHT .
+
+    ---returns a move vector
+    vars X Y : Int .
+    var m : Move .
+    op getAvailableMoves : Coords Move -> Vector .
+    eq getAvailableMoves((X ; Y), I) = getMoveFromIndex(0, Y > 0), getMoveFromIndex(1, X > 0), getMoveFromIndex(2, Y < 2), getMoveFromIndex(3, X < 2) .
+    eq getAvailableMoves((X ; Y), m) = removeElementFromVector((getMoveFromIndex(0, Y > 0), getMoveFromIndex(1, X > 0), getMoveFromIndex(2, Y < 2), getMoveFromIndex(3, X < 2)), getComplementaryMove(m)) [ owise ] .
+
+    ---moves the empty piece of the puzzle
+    var M : Matrix .
+    op move : Matrix Move -> Matrix .
+    eq move(M, UP) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, decrementRow(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, decrementRow(getEmptyCoords(M)))) .
+    eq move(M, LEFT) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, decrementCol(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, decrementCol(getEmptyCoords(M)))) .
+    eq move(M, RIGHT) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, incrementCol(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, incrementCol(getEmptyCoords(M)))) .
+    eq move(M, DOWN) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, incrementRow(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, incrementRow(getEmptyCoords(M)))) .
+endfm
+-----------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------
+fmod PUZZLE is
+    protecting MOVE .
+
+    sort Puzzle .
+
+    op _$_ : Matrix Move -> Puzzle [ ctor frozen prec 50 ] .
+
+    var p : Matrix .
+    vars m d : Move .
+    op canMove : Puzzle Move -> Bool .
+    ceq canMove((p $ m), d) = true if isElementInVector(getAvailableMoves(getEmptyCoords(p), m), d) .
+    eq canMove((p $ m), d) = false [ owise ] .
+
+    vars first second : Int .
+    op inversionValue : Int Int -> Int .
+    eq inversionValue(first, 0) = 0 .
+    eq inversionValue(0, second) = 0 .
+    ceq inversionValue(first,  second) = 1 if first > second .
+    eq inversionValue(first, second) = 0 [ owise ] .
+
+    var head successor : Element .
+    var tail : Vector .
+    op getInversionsOfVector : Vector -> Int .
+    eq getInversionsOfVector(head, nil) = 0 .
+    eq getInversionsOfVector((head, successor), tail) = inversionValue(toValue(head), toValue(successor)) + getInversionsOfVector(head, tail) [ owise ] .
+
+    op getTotalInversions : Vector -> Int .
+    eq getTotalInversions(nil) = 0 .
+    eq getTotalInversions(head, tail) = getInversionsOfVector(head, tail) + getTotalInversions(tail) .
+
+    op isSolvable : Puzzle -> Bool .
+    ceq isSolvable(p $ m) = true if getTotalInversions(vectorize(p)) rem 2 == 0 .
+    eq isSolvable(p $ m) = false [ owise ] .
+
+endfm
+-----------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------
+mod SLIDING-GAME is
+    protecting PUZZLE .
+
+    op initial : -> Puzzle .
+    eq initial = (((three, one, two) | (seven, four, empty) | (five, eight, six)) $ I) .
+    ---eq initial = (((one, two, three) | (empty, four, six) | (seven, five, eight)) $ I) .
+    ---eq initial = (((seven, two, one) | (five, empty, four) | (eight, three, six)) $ I) .
+    ---eq initial = (((one, two, three) | (four, five, six) | (eight, seven, empty)) $ I) .
+
+    var M : Puzzle .
+    var m : Move .
+    op isSuccess : Puzzle -> Bool .
+    eq isSuccess(((one, two, three) | (four, five, six) | (seven, eight, empty)) $ m) = true .
+    eq isSuccess(M) = false [ owise ] .
+
+    ---NEED TO CONSIDER A MATRIX COMPOSED BY 3 VECTORS, OTHERWISE THE PROGRAM WILL CONSIDER ONLY MATRICES COMPOSED BY 2
+    vars V W Y Z : Vector .
+    crl [right] : ((V | W | Y) $ m) => (move((V | W | Y), RIGHT) $ RIGHT) if canMove(((V | W | Y) $ m), RIGHT) .
+    crl [left] : ((V | W | Y) $ m) => (move((V | W | Y), LEFT) $ LEFT) if canMove(((V | W | Y) $ m), LEFT) .
+    crl [up] : ((V | W | Y) $ m) => (move((V | W | Y), UP) $ UP) if canMove(((V | W | Y) $ m), UP) .
+    crl [down] : ((V | W | Y) $ m) => (move((V | W | Y), DOWN) $ DOWN) if canMove(((V | W | Y) $ m), DOWN) .
+    ---crl [right] : ((V | W | Y | Z) $ m) => (move((V | W | Y | Z), RIGHT) $ RIGHT) if canMove(((V | W | Y | Z) $ m), RIGHT) .
+    ---crl [left] : ((V | W | Y | Z) $ m) => (move((V | W | Y | Z), LEFT) $ LEFT) if canMove(((V | W | Y | Z) $ m), LEFT) .
+    ---crl [up] : ((V | W | Y | Z) $ m) => (move((V | W | Y | Z), UP) $ UP) if canMove(((V | W | Y | Z) $ m), UP) .
+    ---crl [down] : ((V | W | Y | Z) $ m) => (move((V | W | Y | Z), DOWN) $ DOWN) if canMove(((V | W | Y | Z) $ m), DOWN) .
+endm
