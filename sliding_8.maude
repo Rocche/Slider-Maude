@@ -1,5 +1,4 @@
 -------------------------------------------------------------------------------------------
----coordinates of an element in a matrix
 fmod COORDS is
     protecting INT .
 
@@ -7,7 +6,6 @@ fmod COORDS is
 
     op _;_ : Int Int -> Coords [ ctor prec 30 ] .
 
-    ---used for searching function in matrix
     vars x y w z : Int .
     op incrementRow : Coords -> Coords .
     eq incrementRow(x ; y) = (x + 1) ; y .
@@ -25,7 +23,6 @@ endfm
 ----------------------------------------------------------------------------------------------
 
 ----------------------------------------------------------------------------------------------
----elements of vectors and matrices
 fmod ELEMENT is
     protecting COORDS .
 
@@ -49,7 +46,6 @@ endfm
 -----------------------------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------------------------
----vectors
 fmod VECTOR is
     protecting ELEMENT .
 
@@ -63,13 +59,10 @@ fmod VECTOR is
     var head E : Element .
     var tail : Vector .
 
-    ---get an element from a vector giving an index
-
     op getElementByIndex : Vector Int -> Vector .
     eq getElementByIndex(head, tail, 0) = head .
     eq getElementByIndex(head, tail, N) = getElementByIndex(tail, N - 1) .
     
-    ---replace an element in a vector giving his index
     op replaceElementIntoVector : Vector Int Element -> Vector .
     eq replaceElementIntoVector((head, tail), 0, E) = E, tail .
     eq replaceElementIntoVector((head, tail), N, E) = head, replaceElementIntoVector(tail, N - 1, E) [ owise ] . 
@@ -88,7 +81,6 @@ endfm
 -----------------------------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------------------------
----matrices
 fmod MATRIX is
     protecting VECTOR .
 
@@ -104,34 +96,25 @@ fmod MATRIX is
     vars row_index col_index : Int .
     var E head : Element .
 
-    ---get an element from a matrix given coordinates
-
     op getElementByCoords : Matrix Coords -> Element [ strat (1 2 0)] .
     eq getElementByCoords(row | remaining, (0 ; col_index)) = getElementByIndex(row, col_index) .
     eq getElementByCoords(row | remaining, (row_index ; col_index)) = getElementByCoords(remaining, ((row_index - 1) ; col_index)) .
-
-    ---replace an element in matrix with another element specifying its coordinates
 
     op replaceElementIntoMatrix : Matrix Coords Element -> Matrix [ strat (2 3 1 0)] .
     eq replaceElementIntoMatrix((row | remaining), (0 ; col_index), E) = replaceElementIntoVector(row, col_index, E) | remaining .
     eq replaceElementIntoMatrix((row | remaining), (row_index ; col_index), E) = row | replaceElementIntoMatrix(remaining, ((row_index - 1) ; col_index), E) .
     
-    ---gets an element's index
     op getIndexFromElement : Vector Element -> Int .
     eq getIndexFromElement((E, tail), E) = 0 .
     eq getIndexFromElement((head, tail), E) = 1 + getIndexFromElement(tail, E) [ owise ] .
 
-
-    ---gets an element's coordinates
     op getCoordsFromElement : Matrix Element -> Coords .
     ceq getCoordsFromElement((row | remaining), E) = 0 ; getIndexFromElement(row, E) if getIndexFromElement(row, E) < 3 .
     eq getCoordsFromElement((row | remaining), E) = incrementRow(getCoordsFromElement(remaining, E)) [ owise ] .
 
-    ---gets empty coordinates
     op getEmptyCoords : Matrix -> Coords .
     eq getEmptyCoords(M) = getCoordsFromElement(M, empty) .
 
-    ---vectorize a matrix: used for checking solvability of a puzzle
     op vectorize : Matrix -> Vector .
     eq vectorize(mnil) = nil .
     eq vectorize(row | remaining) = row , vectorize(remaining) [ owise ] .
@@ -140,7 +123,6 @@ endfm
 -----------------------------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------------------------
----moves
 fmod MOVE is 
     protecting MATRIX .
 
@@ -150,8 +132,6 @@ fmod MOVE is
 
     ops LEFT UP RIGHT DOWN I : -> Move [ ctor ] .
 
-    ---returns the move based on its index, each index refers to a move (respectively 0 -> LEFT, 1 -> UP, 2 -> RIGHT, 3 -> DOWN)
-
     op getMoveFromIndex : Int Bool -> Move .
     eq getMoveFromIndex(0, true) = LEFT .
     eq getMoveFromIndex(1, true) = UP .
@@ -159,22 +139,18 @@ fmod MOVE is
     eq getMoveFromIndex(3, true) = DOWN .
     eq getMoveFromIndex(N:Int, B:Bool) = nil [ owise ] .
 
-    ---returns the complementary move
-
     op getComplementaryMove : Move -> Move .
     eq getComplementaryMove(UP) = DOWN .
     eq getComplementaryMove(RIGHT) = LEFT .
     eq getComplementaryMove(DOWN) = UP .
     eq getComplementaryMove(LEFT) = RIGHT .
 
-    ---returns a move vector
     vars X Y : Int .
     var m : Move .
     op getAvailableMoves : Coords Move -> Vector .
     eq getAvailableMoves((X ; Y), I) = getMoveFromIndex(0, Y > 0), getMoveFromIndex(1, X > 0), getMoveFromIndex(2, Y < 2), getMoveFromIndex(3, X < 2) .
     eq getAvailableMoves((X ; Y), m) = removeElementFromVector((getMoveFromIndex(0, Y > 0), getMoveFromIndex(1, X > 0), getMoveFromIndex(2, Y < 2), getMoveFromIndex(3, X < 2)), getComplementaryMove(m)) [ owise ] .
 
-    ---moves the empty piece of the puzzle
     var M : Matrix .
     op move : Matrix Move -> Matrix .
     eq move(M, UP) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, decrementRow(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, decrementRow(getEmptyCoords(M)))) .
@@ -183,6 +159,7 @@ fmod MOVE is
     eq move(M, DOWN) = replaceElementIntoMatrix(replaceElementIntoMatrix(M, incrementRow(getEmptyCoords(M)), empty), getEmptyCoords(M), getElementByCoords(M, incrementRow(getEmptyCoords(M)))) .
 endfm
 -----------------------------------------------------------------------------------------------
+
 -----------------------------------------------------------------------------------------------
 fmod PUZZLE is
     protecting MOVE .
@@ -220,6 +197,7 @@ fmod PUZZLE is
 
 endfm
 -----------------------------------------------------------------------------------------------
+
 -----------------------------------------------------------------------------------------------
 mod SLIDING-GAME is
     protecting PUZZLE .
@@ -242,8 +220,4 @@ mod SLIDING-GAME is
     crl [left] : ((V | W | Y) $ m) => (move((V | W | Y), LEFT) $ LEFT) if canMove(((V | W | Y) $ m), LEFT) .
     crl [up] : ((V | W | Y) $ m) => (move((V | W | Y), UP) $ UP) if canMove(((V | W | Y) $ m), UP) .
     crl [down] : ((V | W | Y) $ m) => (move((V | W | Y), DOWN) $ DOWN) if canMove(((V | W | Y) $ m), DOWN) .
-    ---crl [right] : ((V | W | Y | Z) $ m) => (move((V | W | Y | Z), RIGHT) $ RIGHT) if canMove(((V | W | Y | Z) $ m), RIGHT) .
-    ---crl [left] : ((V | W | Y | Z) $ m) => (move((V | W | Y | Z), LEFT) $ LEFT) if canMove(((V | W | Y | Z) $ m), LEFT) .
-    ---crl [up] : ((V | W | Y | Z) $ m) => (move((V | W | Y | Z), UP) $ UP) if canMove(((V | W | Y | Z) $ m), UP) .
-    ---crl [down] : ((V | W | Y | Z) $ m) => (move((V | W | Y | Z), DOWN) $ DOWN) if canMove(((V | W | Y | Z) $ m), DOWN) .
 endm
